@@ -1,8 +1,12 @@
+import os
+
 import streamlit as st
 
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+
+import json
 
 from tools.word_feature_vectors import word_feature_extraction, norm_1_sig, z_norm_sig
 from tools.query_search import query_search
@@ -12,6 +16,10 @@ from tools.query_search import query_search
 
 import numpy as np
 
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 def initialization():
     # Store the initial value of widgets in session state
     if "visibility" not in st.session_state:
@@ -19,9 +27,16 @@ def initialization():
         st.session_state.disabled = False
         st.session_state.placeholder = "Enter text here..."
 
+
+@st.cache(suppress_st_warning=True)
+def upload_word_description_file():
+    f = open("streamlit_content/word_descriptions.json")
+    word_description = json.load(f)
+    return word_description
+
 @st.cache(suppress_st_warning=True)
 def upload_file(file):
-    s = np.loadtxt(file)[120:80000, 2]
+    s = np.loadtxt(file)
     if(np.ndim(s)>1):
         for i in range(np.shape(s)[1]):
             s[:, i] = z_norm_sig(s[:, i])
@@ -30,20 +45,37 @@ def upload_file(file):
     return s
 
 def header_upload_files():
-    uploaded_file = st.file_uploader("Choose a file")
-    if uploaded_file is not None:
-        s = upload_file(uploaded_file)
+    c1, c2 = st.columns([0.5, 0.5])
+    with c1:
+        uploaded_file = st.file_uploader("Choose a file", key="upload_file", on_change=upload_example)
+    with c2:
+        examples = os.listdir("data/")
+        st.session_state["examples"] = examples
+        select_examples = st.selectbox("Load an example:", ["example_"+str(i+1) for i in range(len(examples))], key="example_selection", on_change=load_example)
+    #The first time, load example
+    upload_example()
+
+@st.cache(suppress_st_warning=True)
+def upload_example():
+    if st.session_state.upload_file is not None:
+        st.session_state["signal"] = upload_file(st.session_state.upload_file)
     else:
-        s = upload_file("data/opensignals_ANDROID_ACCELEROMETER_2022-02-12_11-29-16.txt")
-        # s = upload_file("data/opensignals_ANDROID_GYROSCOPE_2022-02-12_11-29-16.txt")
-    return s
+        load_example()
+
+@st.cache(suppress_st_warning=True)
+def load_example():
+    example_name = int(st.session_state.example_selection.split("_")[1])-1
+    examples = st.session_state["examples"]
+    st.session_state["signal"] = upload_file("data/"+examples[example_name])
 
 def query_placeholder():
+    # placeholder = st.empty()
+    # input = placeholder.text_input("Query:", key="query")
     text_input = st.text_input(
         "Query:",
         label_visibility=st.session_state.visibility,
-        disabled=st.session_state.disabled,
         placeholder=st.session_state.placeholder,
+        key="query"
     )
 
     return text_input
@@ -54,7 +86,7 @@ def window_size_placeholder():
         label_visibility=st.session_state.visibility,
         disabled=st.session_state.disabled,
         placeholder="Enter window size...",
-        value=100
+        value=500
     )
 
     return win_size_input
@@ -154,18 +186,38 @@ def first_figure(s, scores):
 
 @st.cache(suppress_st_warning=True)
 def run_static_code(s, win_size):
+    # load style properties
     # % 1 - extract word feature vectors
     key1, key2, key3 = word_feature_extraction(s, win_size)
 
     return key1, key2, key3
 
+def search(fig, keys, query_input, win_size):
+    key1, key2, key3 = keys
+    # 2 - performs search on the signal
+    st.write(query_input)
+    scores = query_search(st.session_state["signal"], key1, key2, key3, [query_input], int(win_size))
+
+    fig_ = update_figure(st.session_state["signal"], fig, scores, int(k), int(win_size))
+    chart_.write(fig_)
+
+def update_search_word():
+    word_ = st.session_state.select_word
+    st.session_state.query = word_descriptions[word_][1]
+def update_search_operator():
+    operator_ = st.session_state.select_operator
+    st.session_state.query = word_descriptions[operator_][1]
+
+
 # init
+local_css("streamlit_content/style.css")
+word_descriptions = upload_word_description_file()
 initialization()
 
 st.title("QuoTS")
 
 #load signal
-s = header_upload_files()
+header_upload_files()
 
 #text
 c1, c2, c3 = st.columns([6, 2, 2])
@@ -177,21 +229,54 @@ with st.container():
     with c3:
         k = number_of_subsequences()
 
-key1, key2, key3 = run_static_code(s, int(win_size))
+key1, key2, key3 = run_static_code(st.session_state["signal"], int(win_size))
 
-scores = np.zeros(len(s))
+scores = np.zeros(len(st.session_state["signal"]))
 
 #figure1
-fig = first_figure(s, scores)
+fig = first_figure(st.session_state["signal"], scores)
 chart_ = st.empty()
 chart_.write(fig)
 
 if(query_input):
-    # 2 - performs search on the signal
-    st.write(query_input)
-    scores = query_search(s, key1, key2, key3, [query_input], int(win_size))
+    keys = [key1, key2, key3]
+    search(fig, keys, query_input, win_size)
+    # # 2 - performs search on the signal
+    # st.write(query_input)
+    # scores = query_search(s, key1, key2, key3, [query_input], int(win_size))
+    #
+    # fig = update_figure(s, fig, scores, int(k), int(win_size))
+    # chart_.write(fig)
+    #
+    # # highlightSubsequences(s, scores, int(k), int(win_size))
 
-    fig = update_figure(s, fig, scores, int(k), int(win_size))
-    chart_.write(fig)
+# sidebar
+with st.sidebar:
+    st.header("Get started here!!!")
+    st.markdown("__Search__ for __patterns__ on time series like if you could __Google it__!!!")
+    st.markdown("If you wish to find examples of a particular behavior with our system, "
+                "you can simply describe the data with words from our vocabulary and operators.")
+    st.markdown("For example, if you wish to find data that is suggestive of a high change, you can write a simple query, like:")
+    st.markdown("__s1: high__")
 
-    # highlightSubsequences(s, scores, int(k), int(win_size))
+    tab1, tab2 = st.tabs(["Words", "Operators"])
+
+    with tab1:
+        word = st.selectbox('Select a word from our vocabulary:',
+                            ('up', 'down', 'noise', 'complex', 'simple', 'periodic', 'common', 'uncommon', 'high', 'low',
+                             'top', 'bottom'), key="select_word", on_change=update_search_word)
+        mkd_sentence = word_descriptions[word][0]
+        # mkd_image = Image.open(word_descriptions[word][1])
+        st.markdown(mkd_sentence)
+        # st.image(mkd_image, width=150)
+
+        # st.button('Try the word!', on_click=update_search_word)
+
+    with tab2:
+        operator = st.selectbox('Select an operator:',
+                                ('not (!)', 'followed by', 'grouped followed by ([])', 'wildcard (.)'),
+                                key="select_operator", on_change=update_search_operator)
+        mkd_sentence = word_descriptions[word][0]
+        mkd_search = word_descriptions[word][1]
+
+        # st.button('Try the Operator!', on_click=update_search_operator)

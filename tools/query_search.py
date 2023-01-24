@@ -230,9 +230,9 @@ def grouped_followed_by_extract_score(X, KEY_VECTOR2, KEY_VECTOR3, keywords, win
             scores[i, :] = param_vec[:b-a]
 
     scores = norm_1_sig(np.mean(scores, 0))
-    plt.plot(scores)
-    plt.plot(norm_1_sig(X))
-    plt.show()
+    # plt.plot(scores)
+    # plt.plot(norm_1_sig(X))
+    # plt.show()
     return scores
 
 def multi_query_search(X, K1, K2, K3, query_groups, signal_indxs, win_size):

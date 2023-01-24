@@ -51,8 +51,8 @@ def multi_d_scale_vector_generation(X, win_size, keyword_keys):
 
 def uni_dimensional_extraction(signal, win_size):
     # map keywords and keys into a container, already normalized
-    keywords_keys = ['noise', 'up', 'down', 'flat', 'symmetric', 'assymetric', 'complex', 'high', 'low', 'peak', 'valley', 'stepup',
-                     'stepdown', 'plateauup', 'plateaudown', 'top', 'bottom', 'simple', 'quick', 'vval', 'uval',
+    keywords_keys = ['noise', 'up', 'down', 'flat', 'symmetric', 'assymetric', 'complex', 'high', 'low', 'peak', 'valley', 'step_up',
+                     'step_down', 'plateau_up', 'plateau_down', 'top', 'bottom', 'simple', 'quick', 'vval', 'uval',
                      'middle', 'clean']
 
     keywords_vals1 = multi_scale_vector_generation(signal, int(win_size))

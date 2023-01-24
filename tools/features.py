@@ -1,6 +1,8 @@
 import numpy as np
 import numpy.fft as fft
 from numpy.lib.stride_tricks import sliding_window_view
+from scipy import signal
+import matplotlib.pyplot as plt
 import rolling
 
 def slidingDotProduct(query, ts):
@@ -38,6 +40,25 @@ def slidingDotProduct(query, ts):
 
     #Note that we only care about the dot product results from index m-1 onwards, as the first few values aren't true dot products (due to the way the FFT works for dot products)
     return dot_product[trim :]
+
+def nd_periodogram(ts, m):
+    Y = sliding_window_view(ts, m)
+    # Calculate the discrete Fourier transform of the time series
+    dft = np.fft.fftn(Y)
+    dft = dft[:, :m//2]
+
+    power_spectrum = np.abs(dft)**2
+    frequencies = np.linspace(0, 0.5, m//2)
+
+    return frequencies, power_spectrum
+
+def md_spectrogram(ts, m):
+    f, t, Sxx = signal.spectrogram(ts, nperseg=ts//m, noverlap=(ts//m)-10)
+    ax1 = plt.subplot(211)
+    ax1.plot(ts)
+    ax2 = plt.subplot(212)
+    ax2.pcolormesh(t, f, Sxx, shading='gouraud')
+    plt.show()
 
 def mass(query, ts):
     """
