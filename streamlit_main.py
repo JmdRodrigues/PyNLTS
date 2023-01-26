@@ -77,9 +77,10 @@ def load_sidebar():
 
         with tab1:
             word = st.selectbox('Select a word from our vocabulary:',
-                                ('up', 'down', 'noise', 'complex', 'simple', 'periodic', 'common', 'uncommon', 'high',
-                                 'low',
-                                 'top', 'bottom'), key="select_word")
+                                ('noise', 'up', 'down', 'flat', 'symmetric', 'assymetric', 'complex', 'high', 'low',
+                                 'peak', 'valley', 'step_up',
+                                 'step_down', 'plateau_up', 'plateau_down', 'top', 'bottom', 'simple', 'quick', 'vval',
+                                 'uval', 'middle', 'clean'), key="select_word")
                                  # 'top', 'bottom'), key="select_word", on_change=update_search_word)
             mkd_sentence = word_descriptions[word][0]
             # mkd_image = Image.open(word_descriptions[word][1])
@@ -183,6 +184,9 @@ def recaculate_wfvs():
     st.session_state["wfv1"] = key1
     st.session_state["wfv2"] = key2
     st.session_state["wfv3"] = key3
+    #afterwards, search in case of having a query
+    if st.session_state.query is not None:
+        search()
 
 
 @st.cache(suppress_st_warning=True)
