@@ -50,12 +50,15 @@ def upload_file(file):
     return s
 
 def uploaded_example():
+    print("getting in uploadadadadad")
     if st.session_state.upload_file is not None:
+        print("getting in uploadadadadad")
         s = upload_file(st.session_state.upload_file)
         st.session_state["signal"] = s
-        st.session_state.count = 0
+        st.session_state.count = 1
 
 def load_example():
+    print("but alos here....")
     example_name = int(st.session_state.example_selection.split("_")[1]) - 1
     examples = st.session_state["examples"]
     s = upload_file("data/" + examples[example_name])
@@ -78,8 +81,7 @@ def load_sidebar():
         with tab1:
             word = st.selectbox('Select a word from our vocabulary:',
                                 ('noise', 'up', 'down', 'flat', 'symmetric', 'assymetric', 'complex', 'high', 'low',
-                                 'peak', 'valley', 'step_up',
-                                 'step_down', 'plateau_up', 'plateau_down', 'top', 'bottom', 'simple', 'quick', 'vval',
+                                 'peak', 'valley', 'step_up', 'step_down', 'plateau_up', 'plateau_down', 'top', 'bottom', 'simple', 'vval',
                                  'uval', 'middle', 'clean'), key="select_word")
                                  # 'top', 'bottom'), key="select_word", on_change=update_search_word)
             mkd_sentence = word_descriptions[word][0]
@@ -317,7 +319,21 @@ if(st.session_state.count==0):
     #display figure
     chart_ = st.empty()
     chart_.write(fig1)
-    st.session_state.count = 1
+    st.session_state.count = 2
+    st.session_state.chart1 = fig1
+
+elif(st.session_state.count==1):
+    scores = np.zeros(len(st.session_state.signal))
+    fig1 = first_figure(st.session_state.signal, scores)
+    # compute wfvs after plotting the figure for the first time
+    key1, key2, key3 = run_static_code(st.session_state.signal, int(st.session_state.win_size))
+    st.session_state["wfv1"] = key1
+    st.session_state["wfv2"] = key2
+    st.session_state["wfv3"] = key3
+    # display figure
+    chart_ = st.empty()
+    chart_.write(fig1)
+    st.session_state.count = 2
     st.session_state.chart1 = fig1
 
 else:

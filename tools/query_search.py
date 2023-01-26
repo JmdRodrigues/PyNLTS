@@ -2,6 +2,7 @@ import numpy as np
 from tools.features import norm_1_sig, movmean
 import matplotlib.pyplot as plt
 import re
+import streamlit as st
 
 def query_search(X, K1, K2, K3, query, win_size):
 # Parse text - ---------------------------------------------
@@ -19,29 +20,40 @@ def query_search(X, K1, K2, K3, query, win_size):
     #     [scores, signal_groups] = multi_level_search(query)
     # else:
     #do singlelevel search
-    scores, signal_groups = single_level_search(X, K1, K2, K3, query[0], win_size)
-
+    try:
+        scores, signal_groups = single_level_search(X, K1, K2, K3, query[0], win_size)
+    except:
+        if("followed" in query[0]):
+            st.error("Please check this example to use followed by: s1: (up high) followed by (down) OR "
+                     "(multisignal: (s1: up high) followed by (s2: low))")
+        else:
+            st.error("Check your query, something might be missing or wrongly written")
+        scores = np.zeros(len(X))
     return scores
 
 
 def single_level_search(X, K1, K2, K3, query, win_size):
-    # 2 - check if single, or multiple signal
-    signal_groups = re.split("s\d:", query)[1:]
-    signal_indexs = re.findall("s(\d):", query)
     # 3 - apply regex to query, separating brackets and single, now also taking care of multisignals
-
     ##### If there are multiple signals being queried
     if (np.ndim(X) > 1):
-        # if("followed by" in signal_groups[1]):
-        #     # If there is a "followed by" statement for multiple signals, a different approach should be made
-        #     group1 = signal_groups[1].split("followed by")
-        #     group2 = signal_groups[3]
-        #     # scores = norm_1_sig(multi_query_search_followedby(X, K1, K2, K3, [group1[1], group2], sig_indexs, win_size))
-        # # If normal interaction between signals, than it is the normal addition of scores
-        # else:
-        scores = multi_query_search(X, K1, K2, K3, signal_groups, signal_indexs, win_size)
+        signal_groups = re.split("s\d:", query)[1:]
+        signal_indexs = re.findall("s(\d):", query)
+        re_followed_by = re.search("\(.+\) followed by \(.+\)", query)
+        # check scores for followed by
+        if(re_followed_by is None):
+            scores = multi_query_search(X, K1, K2, K3, signal_groups, signal_indexs, win_size)
+            # if("followed by" in signal_groups[0]):
+                # If there is a "followed by" statement for multiple signals, a different approach should be made
+                # group1 = signal_groups[0].split("followed by")
+                # group2 = signal_groups[3]
+                # scores = norm_1_sig(multi_query_search_followedby(X, K1, K2, K3, [group1[1], group2], sig_indexs, win_size))
+            # If normal interaction between signals, than it is the normal addition of scores
+        else:
+            followed_by_match = re_followed_by.group()
+            scores = norm_1_sig(multi_followed_by_search(X, K1, K2, K3, followed_by_match, win_size))
     else:
         #### Only 1 signal being queried
+        signal_groups = re.split("s\d:", query)[1:]
         # 1 - Check the presence of sequence operator
         query = signal_groups[0]
         re_followed_by = re.search("\(.+\) followed by \(.+\)", query)
@@ -128,6 +140,21 @@ def followed_by_search(X, K1, K2, K3, query, win_size):
     scores[:len(score_pre)-win_size] = score_pre[:-win_size] + score_pos[win_size:]
 
     return scores
+
+def multi_followed_by_search(X, K1, K2, K3, query, win_size):
+    queries = query.split("followed by")
+    query1 = queries[0][1:-2]
+    query2 = queries[1][2:-1]
+    sig1 = int(query1.split(":")[0][1])
+    sig2 = int(query2.split(":")[0][1])
+    print(K1)
+    score_pre = uni_query_search(X[:, sig1-1], K1[str(sig1)], K2[str(sig1)], K3[str(sig1)], str(query1.split(":")[1]), win_size)
+    score_pos = uni_query_search(X[:, sig2-1], K1[str(sig2)], K2[str(sig2)], K3[str(sig2)], str(query2.split(":")[1]), win_size)
+    scores = np.zeros(len(X) - win_size + 1)
+    scores[:len(score_pre) - win_size] = score_pre[:-win_size] + score_pos[win_size:]
+
+    return scores
+
 
 
 def grouped_followed_by(X, K2, K3, window_query, win_size):
@@ -236,6 +263,22 @@ def grouped_followed_by_extract_score(X, KEY_VECTOR2, KEY_VECTOR3, keywords, win
     return scores
 
 def multi_query_search(X, K1, K2, K3, query_groups, signal_indxs, win_size):
+    #check followed by first:
+    #### Only 1 signal being queried
+    # 1 - Check the presence of sequence operator
+    query = query_groups[0]
+    re_followed_by = re.search("\(.+\) followed by \(.+\)", query)
+    # check scores for followed by
+    if (re_followed_by is None):
+        score_fb = 0
+    else:
+        followed_by_match = re_followed_by.group()
+        re_remaining = " ".join(
+            [" ".join(list(filter(None, s_i.split(" ")))) for s_i in re.split("\(.+\) followed by \(.+\)", query)])
+        query = "".join(re_remaining)
+        score_fb = norm_1_sig(followed_by_search(X, K1, K2, K3, followed_by_match, win_size))
+
+
     scores_sig_i = np.zeros(np.shape(X)[0]-win_size+1)
     for i in range(len(query_groups)):
         #search the query on the previous signal's index
