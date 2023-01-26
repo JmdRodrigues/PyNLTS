@@ -23,7 +23,7 @@ def multi_scale_vector_generation(signal, win_size):
     return keywords_vals
 
 def multi_d_scale_vector_generation(X, win_size, keyword_keys):
-    print(np.shape(X))
+    # print(np.shape(X))
     d = {str(i+1): [] for i in range(np.shape(X)[1])}
     for i, signal_i in enumerate(np.transpose(X)):
         noise_i, complex_i, simple_i, clean_i, high_i, low_i, bottom_i, top_i, mean_i, up_i, down_i, speed_i, flat_i = quick_moving_feature_extraction(signal_i, win_size)
