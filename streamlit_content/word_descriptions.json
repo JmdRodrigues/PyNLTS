@@ -20,7 +20,7 @@
   "symmetric": ["The normalized euclidean distance to the __subsequence__’s horizontally flipped self.", "s1: symmetric", "figures\\thumbnail_complex\\thumbnail_complex-1.png"],
   "assymmetric": ["The negation of **symmetric**.", "s1: asymmetric", "figures\\thumbnail_complex\\thumbnail_complex-1.png"],
   "not (!)": ["__Negation__ operator. Inversion of the word feature vector weights:\n $!word = 1-word$","s1: !up"],
-  "followed by": ["Writting (word_A __followed by__ word_B) applies a time dependency on the resulting scores. It maximizes subsequences with high A that have a B on the next subsequence. It needs the round brackets to delimit the conditions for A and B. It also words between different signals.", "s1: (valley followed by up)"],
+  "followed by": ["Writting (word_A __followed by__ word_B) applies a time dependency on the resulting scores. It maximizes subsequences with high A that have a B on the next subsequence. It needs the round brackets to delimit the conditions for A and B. It also words between different signals.\n Example: \n s1: (up) followed by (down) OR (s1: up) followed by (s2: down)", "s1: (valley) followed by (up)"],
   "grouped followed by ([])": ["You can also describe your pattern as a sequence of time ordered properties. Use the square brackets to describe your subsequence.\n For example, [up down] says that the subsequence is up during the first half and down on the second half.","s1: [up down]"],
   "wildcard (.)": ["You might not be interested in describing the second half of a grouped followed by ([]). Use the wildcard to give the same weight to all scoring functions.","s1: [. valley]"]
 }
